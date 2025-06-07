@@ -1,4 +1,5 @@
-x = 10;
-y = 20;
-
-se ( 10*2 == 20 ) { retorne 2; }
+x = 10 + 8;
+se (x) {
+    y = x * 2;
+    retornar y;
+}
