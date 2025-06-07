@@ -1,0 +1,52 @@
+
+parser code {:
+    Lexer lexer;
+    parser(Lexer lexer) { this.lexer = lexer; }
+:}
+
+scan with {: return lexer.next_token(); :};
+
+/* Definição de terminais */
+terminal SEMICOLON, COMMA, PLUS, MINUS, TIMES, DIV, EQ, ATT, NEQ, LPAREN, RPAREN, LBRACE, RBRACE;
+terminal Integer INT_CONST;
+terminal Float FLOAT_CONST;
+terminal String IDENTIFIER;
+terminal SE, SENAO, ENQUANTO, RETORNE;
+
+/* Definição de não terminais */
+non terminal program;
+non terminal stmt_list;
+non terminal stmt;
+non terminal expr;
+
+/* Precedência de operadores */
+precedence left PLUS, MINUS;
+precedence left TIMES, DIV;
+precedence left EQ, NEQ;
+
+program ::= stmt_list             {: System.out.println("Programa válido!"); :};
+
+stmt_list ::= stmt_list stmt       {: /* Lista de comandos */ :}
+           | stmt                  {: /* Único comando */ :}
+           ;
+
+/* Não terminais */
+stmt ::= IDENTIFIER:$1 ATT expr:$3 SEMICOLON                      {: System.out.println("Atribuição: " + $1 + " = " + $3); :}
+      | SE LPAREN expr:$3 RPAREN LBRACE stmt_list RBRACE          {: System.out.println("Bloco condicional SE"); :}
+      | ENQUANTO LPAREN expr:$3 RPAREN LBRACE stmt_list RBRACE    {: System.out.println("Bloco de repetição ENQUANTO"); :}
+      | RETORNE expr:$2 SEMICOLON                                 {: System.out.println("Retorno: " + $2); :}
+      ;
+
+/* Aqui sao as expressoes que tem que ser colocadas depois de uma nao terminal */
+/* adicionar aqui expressoes de comparação para poder usar dentro do SE */
+expr ::= expr:$1 PLUS expr:$3         {: RESULT = (Integer)$1 + (Integer)$3; :}
+      | expr:$1 MINUS expr:$3         {: RESULT = (Integer)$1 - (Integer)$3; :}
+      | expr:$1 TIMES expr:$3         {: RESULT = (Integer)$1 * (Integer)$3; :}
+      | expr:$1 DIV expr:$3           {: RESULT = (Integer)$1 / (Integer)$3; :}
+      | expr:$1 EQ expr:$3            {: RESULT =  (Boolean) $1 == $3; :}
+      | LPAREN expr:$2 RPAREN         {: RESULT = $2; :}
+      | INT_CONST:$1                  {: RESULT = (Integer)$1; :}
+      | FLOAT_CONST:$1                {: RESULT = $1; :}
+      | IDENTIFIER:$1                 {: RESULT = $1; :}
+      ;
+
