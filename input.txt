@@ -1,5 +1,5 @@
-x = 10 + 8;
-se (x) {
-    y = x * 2;
-    retornar y;
+definir soma() {
+    retornar 10 + 20;
 }
+
+soma();
