@@ -1,5 +1,6 @@
 @echo off
 call cleanup.bat
+cls
 
 REM Caminhos dos JARs
 set flex=lib\jflex-full-1.9.1.jar

@@ -1,8 +1,11 @@
 import java_cup.runtime.*;
+import java.util.function.Supplier;
 
 parser code {:
     scanner s;
     java.util.HashMap<String, Integer> vars = new java.util.HashMap<>();
+    java.util.HashMap<String, Supplier<Integer>> funcoes = new java.util.HashMap<>();
+
     parser(scanner s) { this.s = s; }
 :}
 
@@ -10,7 +13,7 @@ scan with {:
     return s.next_token();
 :};
 
-terminal SEMI, PLUS, MINUS, TIMES, UMINUS, LPAREN, RPAREN, SE, RETORNAR, ASSIGN, LBRACE, RBRACE;
+terminal SEMI, DIVI, DIF, PLUS, COMP, MINUS, TIMES, UMINUS, LPAREN, RPAREN, SE, SENAO, RETORNAR, ASSIGN, LBRACE, RBRACE, ESCREVER, ENQUANTO, DEFINIR, MENORQIGUAL, MAIORQIGUAL, MAIORQ, MENORQ;
 terminal Integer NUMBER;
 terminal String ID;
 
@@ -19,24 +22,77 @@ non terminal stmt;
 non terminal Integer expr;
 
 precedence left PLUS, MINUS;
-precedence left TIMES;
+precedence left TIMES, DIVI;
 precedence left UMINUS;
+precedence left DIF, COMP;
+precedence left MENORQIGUAL, MAIORQIGUAL, MAIORQ, MENORQ;
 
 start with stmt_list;
 
 stmt_list ::= stmt_list stmt 
            | stmt ;
 
-stmt ::= expr:e SEMI {: System.out.println("Expr: " + e); :} 
-       | RETORNAR expr:e SEMI {: System.out.println("Retorno: " + e); System.exit(0); :} 
-       | ID:id ASSIGN expr:e SEMI {: vars.put(id, e); :} 
-       | SE LPAREN expr:cond RPAREN LBRACE stmt_list RBRACE 
-           {: if (cond != 0) { /* stmt_list já foi executado */ } else { System.out.println("SE ignorado: condição falsa " + cond); } :} ;
+stmt ::= DEFINIR ID:id LPAREN RPAREN LBRACE stmt:s RBRACE {:
+    funcoes.put(id, () -> {
+        try {
+            return (Integer) s;
+        } catch (Exception e) {
+            System.out.println("Erro ao executar função " + id);
+            return 0;
+        }
+    });
+    System.out.println("Função '" + id + "' definida.");
+    RESULT = null;
+:}
+      | ID:id LPAREN RPAREN SEMI {:
+    if (funcoes.containsKey(id)) {
+        Integer resultado = funcoes.get(id).get();
+        System.out.println("Resultado da função '" + id + "': " + resultado);
+        RESULT = resultado;
+    } else {
+        System.out.println("Função '" + id + "' não definida.");
+        RESULT = 0;
+    }
+:}
+      | ID:id ASSIGN expr:e SEMI {:
+    vars.put(id, e);
+    System.out.println("Variável '" + id + "' atribuída com valor: " + e);
+    RESULT = e;
+:}
+      | SE LPAREN expr:cond RPAREN LBRACE stmt_list:t RBRACE 
+        SENAO LBRACE stmt_list:f RBRACE {:
+    if (cond != 0) {
+        RESULT = t;
+    } else {
+        RESULT = f;
+    }
+:}
+      | ENQUANTO LPAREN expr:cond RPAREN LBRACE stmt_list:bloco RBRACE {:
+    while (cond != 0) {
+        }
+    RESULT = null;
+:}
+      | RETORNAR expr:e SEMI {:
+    RESULT = e;
+:}
+      | ESCREVER LPAREN expr:e RPAREN SEMI {:
+    System.out.println(e);
+:}
+      | expr:e {:
+    RESULT = e;
+:} ;
 
-expr ::= expr:e1 PLUS expr:e2 {: RESULT = e1 + e2; :} 
-       | expr:e1 MINUS expr:e2 {: RESULT = e1 - e2; :} 
-       | expr:e1 TIMES expr:e2 {: RESULT = e1 * e2; :} 
-       | MINUS expr:e {: RESULT = -e; :} %prec UMINUS 
-       | LPAREN expr:e RPAREN {: RESULT = e; :} 
-       | NUMBER:n {: RESULT = n; :} 
-       | ID:id {: RESULT = vars.getOrDefault(id, 0); :} ;
+expr ::= expr:e1 PLUS expr:e2           {: RESULT = e1 + e2; :} 
+       | expr:e1 MINUS expr:e2          {: RESULT = e1 - e2; :} 
+       | expr:e1 TIMES expr:e2          {: RESULT = e1 * e2; :} 
+       | expr:e1 DIVI expr:e2           {: RESULT = e1 / e2; :} 
+       | expr:e1 COMP expr:e2           {: RESULT = (e1.equals(e2)) ? 1 : 0; :} 
+       | expr:e1 DIF expr:e2            {: RESULT = (!e1.equals(e2)) ? 1 : 0; :} 
+       | expr:e1 MAIORQ expr:e2         {: RESULT = (e1 > e2) ? 1 : 0; :} 
+       | expr:e1 MENORQ expr:e2         {: RESULT = (e1 < e2) ? 1 : 0; :} 
+       | expr:e1 MAIORQIGUAL expr:e2    {: RESULT = (e1 >= e2) ? 1 : 0; :} 
+       | expr:e1 MENORQIGUAL expr:e2    {: RESULT = (e1 <= e2) ? 1 : 0; :} 
+       | MINUS expr:e                   {: RESULT = -e; :} %prec UMINUS 
+       | LPAREN expr:e RPAREN           {: RESULT = e; :} 
+       | NUMBER:n                       {: RESULT = n; :} 
+       | ID:id                          {: RESULT = vars.getOrDefault(id, 0); :} ;
