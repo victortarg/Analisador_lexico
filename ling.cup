@@ -1,4 +1,6 @@
 import java_cup.runtime.*;
+import java.util.List;
+
 
 parser code {:
     scanner s;
@@ -10,7 +12,7 @@ scan with {:
     return s.next_token();
 :};
 
-terminal SEMI, PLUS, COMP, MINUS, TIMES, UMINUS, LPAREN, RPAREN, SE, RETORNAR, ASSIGN, LBRACE, RBRACE, ESCREVER;
+terminal SEMI, DIVI, DIF, PLUS, COMP, MINUS, TIMES, UMINUS, LPAREN, RPAREN, SE, SENAO, RETORNAR, ASSIGN, LBRACE, RBRACE, ESCREVER, ENQUANTO, DEFINIR, MENORQIGUAL, MAIORQIGUAL, MAIORQ, MENORQ;
 terminal Integer NUMBER;
 terminal String ID;
 
@@ -19,8 +21,10 @@ non terminal stmt;
 non terminal Integer expr;
 
 precedence left PLUS, MINUS;
-precedence left TIMES;
+precedence left TIMES, DIVI;
 precedence left UMINUS;
+precedence left DIF, COMP;
+precedence left MENORQIGUAL, MAIORQIGUAL, MAIORQ, MENORQ;
 
 start with stmt_list;
 
@@ -36,14 +40,20 @@ stmt ::= expr:e {:
             System.out.println("Variavel criada com sucesso"); 
             RESULT = e; 
         :} 
-        | SE LPAREN expr:cond RPAREN LBRACE stmt_list:list  RBRACE  
-        {: 
+        | SE LPAREN expr:cond RPAREN LBRACE stmt:s RBRACE SENAO RBRACE stmt:s LBRACE {: 
             if (cond != 0) { 
-                RESULT = list;
+                RESULT = s;
             } else { 
                 System.out.println("Condição falsa"); 
                 RESULT = null;
             };
+        :}
+        | DEFINIR ID:id LPAREN RPAREN LBRACE stmt:s RBRACE
+        | ENQUANTO LPAREN expr:cond RPAREN LBRACE stmt_list:list RBRACE {: 
+            while (cond != 0) {
+                
+            }
+            RESULT = null;  // Define o resultado após a execução
         :}
         | RETORNAR stmt:s SEMI {: 
             System.out.println("Retorno: " + s); System.exit(0); 
@@ -52,11 +62,17 @@ stmt ::= expr:e {:
                 System.out.println(s); 
         :} ;
 
-expr ::= expr:e1 PLUS expr:e2   {: RESULT = e1 + e2; :} 
-       | expr:e1 MINUS expr:e2  {: RESULT = e1 - e2; :} 
-       | expr:e1 TIMES expr:e2  {: RESULT = e1 * e2; :} 
-       | expr:e1 COMP expr:e2   {: RESULT = (e1.equals(e2)) ? 1 : 0; :} 
-       | MINUS expr:e           {: RESULT = -e; :} %prec UMINUS 
-       | LPAREN expr:e RPAREN   {: RESULT = e; :} 
-       | NUMBER:n               {: RESULT = n; :} 
-       | ID:id                  {: RESULT = vars.getOrDefault(id, 0); :} ;
+expr ::= expr:e1 PLUS expr:e2           {: RESULT = e1 + e2; :} 
+       | expr:e1 MINUS expr:e2          {: RESULT = e1 - e2; :} 
+       | expr:e1 TIMES expr:e2          {: RESULT = e1 * e2; :} 
+       | expr:e1 DIVI expr:e2           {: RESULT = e1 / e2; :} 
+       | expr:e1 COMP expr:e2           {: RESULT = (e1.equals(e2)) ? 1 : 0; :} 
+       | expr:e1 DIF expr:e2            {: RESULT = (!e1.equals(e2)) ? 1 : 0; :} 
+       | expr:e1 MAIORQ expr:e2         {: RESULT = (e1 > e2) ? 1 : 0; :} 
+       | expr:e1 MENORQ expr:e2         {: RESULT = (e1 < e2) ? 1 : 0; :} 
+       | expr:e1 MAIORQIGUAL expr:e2    {: RESULT = (e1 >= e2) ? 1 : 0; :} 
+       | expr:e1 MENORQIGUAL expr:e2    {: RESULT = (e1 <= e2) ? 1 : 0; :} 
+       | MINUS expr:e                   {: RESULT = -e; :} %prec UMINUS 
+       | LPAREN expr:e RPAREN           {: RESULT = e; :} 
+       | NUMBER:n                       {: RESULT = n; :} 
+       | ID:id                          {: RESULT = vars.getOrDefault(id, 0); :} ;
