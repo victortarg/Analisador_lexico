@@ -1,6 +1,21 @@
-x = 2;
-y = 11;
+a = 15;
+b = 10;
 
-se (x == y) {
-    retornar 2;
+/*
+se (x==y) {
+    retornar x;
+} senao {
+    x = x + 1;
+    retornar x;
+}
+
+definir soma() {
+    retornar a + b;
+}
+
+soma();
+*/
+
+enquanto (a > b) {  
+    escrever(b);
 }

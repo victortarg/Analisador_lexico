@@ -1,10 +1,13 @@
 import java_cup.runtime.*;
 import java.util.List;
+import java.util.function.Supplier;
+import java.util.ArrayList;
 
 
 parser code {:
     scanner s;
     java.util.HashMap<String, Integer> vars = new java.util.HashMap<>();
+    java.util.HashMap<String, Supplier<Integer>> funcoes = new java.util.HashMap<>();
     parser(scanner s) { this.s = s; }
 :}
 
@@ -28,46 +31,100 @@ precedence left MENORQIGUAL, MAIORQIGUAL, MAIORQ, MENORQ;
 
 start with stmt_list;
 
-stmt_list ::= stmt_list stmt 
-           | stmt ;
+stmt_list ::= stmt_list:sl1 stmt:s1 {: RESULT = sl1 + "\n" + s1; :}
+           | stmt:s1 {: RESULT = s1; :} ;
 
-/*statements*/
-stmt ::= expr:e {:
-            RESULT = e; 
+/* statements */
+stmt ::= expr:e1 {: 
+            RESULT = e1; 
         :}
-        | ID:id ASSIGN expr:e SEMI {: 
-            vars.put(id, e);
-            System.out.println("Variavel criada com sucesso"); 
-            RESULT = e; 
-        :} 
-        | SE LPAREN expr:cond RPAREN LBRACE stmt:s RBRACE SENAO RBRACE stmt:s LBRACE {: 
-            if (cond != 0) { 
-                RESULT = s;
-            } else { 
-                System.out.println("Condição falsa"); 
-                RESULT = null;
-            };
+        | ID:id ASSIGN expr:e2 SEMI {: 
+            vars.put(id, e2);
+            System.out.println("Variável criada com sucesso"); 
+            RESULT = e2; 
         :}
-        | DEFINIR ID:id LPAREN RPAREN LBRACE stmt:s RBRACE
-        | ENQUANTO LPAREN expr:cond RPAREN LBRACE stmt_list:list RBRACE {: 
-            while (cond != 0) {
-                
+        | SE LPAREN expr:cond1 RPAREN LBRACE stmt_list:s1 RBRACE SENAO LBRACE stmt_list:s2 RBRACE {: 
+            if (cond1 != 0) {
+                System.out.println("condição verdadeira "+s1); 
+                RESULT = s1; 
+            } else {
+                System.out.println("condição falsa "+s2); 
+                RESULT = s2; 
             }
-            RESULT = null;  // Define o resultado após a execução
-        :}
-        | RETORNAR stmt:s SEMI {: 
-            System.out.println("Retorno: " + s); System.exit(0); 
         :} 
-        | ESCREVER LPAREN stmt:s RPAREN SEMI {: 
-                System.out.println(s); 
+        | SE LPAREN expr:cond2 RPAREN LBRACE stmt_list:s3 RBRACE {:
+            if (cond2 != 0) {
+                System.out.println("condição verdadeira, apenas o se sem o senao "+s3); 
+            }
+        :}
+        | DEFINIR ID:id LPAREN RPAREN LBRACE stmt:s RBRACE {:
+            funcoes.put(id, () -> {
+                try {
+                    return (Integer) s;
+                } catch (Exception e) {
+                    System.out.println("Erro ao executar função " + id);
+                    return 0;
+                }
+            });
+            System.out.println("Função '" + id + "' definida.");
+            RESULT = null;
+        :}
+        | ID:id LPAREN RPAREN SEMI {:
+            if (funcoes.containsKey(id)) {
+                Integer resultado = funcoes.get(id).get();
+                System.out.println("Resultado da função '" + id + "': " + resultado);
+                RESULT = resultado;
+            } else {
+                System.out.println("Função '" + id + "' não definida.");
+                RESULT = 0;
+            }
+        :}
+        | ENQUANTO LPAREN expr:cond3 RPAREN LBRACE stmt_list:list1 RBRACE {: 
+            // Ta Errado.
+            while (true) { 
+                List<Integer> valores = new ArrayList<>();
+                for (String key : vars.keySet()) {
+                    valores.add(vars.get(key));
+                }
+                if (valores.get(0) > valores.get(1)) {
+                    while (!valores.get(0).equals(valores.get(1))) {
+                        valores.set(1, valores.get(1) + 1);
+                        list1 = valores.get(1);
+
+                        // Aqui chamamos ESCREVER dentro do loop
+                        System.out.println(list1);
+                    }
+                    if (valores.get(0).equals(valores.get(1))) {
+                        break;
+                    }
+                } else {
+                    while (!valores.get(0).equals(valores.get(1))) {
+                        valores.set(0, valores.get(0) + 1);
+                        list1 = valores.get(0);
+
+                        // Aqui chamamos ESCREVER dentro do loop
+                        System.out.println(list1);
+                    }
+                    if (valores.get(0).equals(valores.get(1))) {
+                        break;
+                    }
+                }
+            }
+            RESULT = null;  
+        :} 
+        | RETORNAR expr:e3 SEMI {: 
+            RESULT = e3;
+        :} 
+        | ESCREVER LPAREN expr:e4 RPAREN SEMI {: 
+            RESULT = e4;
         :} ;
 
 expr ::= expr:e1 PLUS expr:e2           {: RESULT = e1 + e2; :} 
        | expr:e1 MINUS expr:e2          {: RESULT = e1 - e2; :} 
        | expr:e1 TIMES expr:e2          {: RESULT = e1 * e2; :} 
        | expr:e1 DIVI expr:e2           {: RESULT = e1 / e2; :} 
-       | expr:e1 COMP expr:e2           {: RESULT = (e1.equals(e2)) ? 1 : 0; :} 
-       | expr:e1 DIF expr:e2            {: RESULT = (!e1.equals(e2)) ? 1 : 0; :} 
+       | expr:e1 COMP expr:e2           {: RESULT = (e1 == e2) ? 1 : 0; :} 
+       | expr:e1 DIF expr:e2            {: RESULT = (e1 != e2) ? 1 : 0; :} 
        | expr:e1 MAIORQ expr:e2         {: RESULT = (e1 > e2) ? 1 : 0; :} 
        | expr:e1 MENORQ expr:e2         {: RESULT = (e1 < e2) ? 1 : 0; :} 
        | expr:e1 MAIORQIGUAL expr:e2    {: RESULT = (e1 >= e2) ? 1 : 0; :} 
