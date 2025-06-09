@@ -45,10 +45,10 @@ stmt ::= expr:e1 {:
         :}
         | SE LPAREN expr:cond1 RPAREN LBRACE stmt_list:s1 RBRACE SENAO LBRACE stmt_list:s2 RBRACE {: 
             if (cond1 != 0) {
-                System.out.println("condição verdadeira "+s1); 
+                System.out.println(s1); 
                 RESULT = s1; 
             } else {
-                System.out.println("condição falsa "+s2); 
+                System.out.println(s2); 
                 RESULT = s2; 
             }
         :} 

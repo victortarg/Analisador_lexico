@@ -1,20 +1,22 @@
 a = 15;
 b = 10;
 
-/*
-se (x==y) {
-    retornar x;
+x = 10;
+y = 5;
+
+se (x < y) {
+    retornar x*5;
+    retornar x/5;
+    retornar x-5;
 } senao {
-    x = x + 1;
+    x = x + 20;
     retornar x;
 }
 
 definir soma() {
     retornar a + b;
 }
-
 soma();
-*/
 
 enquanto (a > b) {  
     escrever(b);

@@ -10,11 +10,6 @@ public class Main {
 
             // Inicia a análise sintática
             p.parse();
-
-            // Exibir árvore sintática
-            //System.out.println("Árvore Sintática Gerada:");
-            //System.out.println(//arvore aqui );
-
             System.out.println("Análise concluída com sucesso!");
         } catch (Exception e) {
             System.err.println("Erro durante a execução: " + e.getMessage());
